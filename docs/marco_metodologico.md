@@ -85,3 +85,40 @@ vez definida la variable objetivo del modelo).
   (alineado al plan registrado), aunque la fuente permite en principio
   extender el análisis a otros departamentos/capitales si el tiempo lo
   permite.
+
+## 7. Limitación de granularidad geográfica y supuesto adoptado
+
+**Limitación confirmada:** el reporte de Supersalud NO cruza motivo
+específico × ciudad. La tabla "por capital de departamento" da el volumen
+total de reclamos de Medellín (sin desglose por motivo), y la tabla "por
+motivo específico" da el desglose por motivo a nivel NACIONAL (sin
+desglose por ciudad). No existe en esta fuente un dato directo de
+"cuántos reclamos por motivo X hubo en Medellín".
+
+**Supuesto adoptado (DECISIÓN METODOLÓGICA EXPLÍCITA, declarada ante el
+jurado):** se asume que la composición porcentual de motivos específicos
+a nivel nacional es representativa de la composición de motivos en
+Medellín. Bajo este supuesto, se estima el volumen mensual de reclamos por
+motivo específico en Medellín como:
+
+```
+reclamos_estimados(motivo, mes, Medellín) =
+    reclamos_totales(mes, Medellín) × proporción_nacional(motivo, mes)
+```
+
+donde `proporción_nacional(motivo, mes)` = reclamos nacionales de ese
+motivo en ese mes / total nacional de reclamos en ese mes.
+
+**Justificación del supuesto:** Medellín es la segunda ciudad más poblada
+de Colombia y su sistema de salud opera bajo el mismo marco regulatorio
+y las mismas EPS que operan a nivel nacional, por lo que no hay razón
+estructural fuerte para esperar que la composición de motivos difiera
+drásticamente de la nacional. Sin embargo, esto es un supuesto de
+proporcionalidad, no un dato observado directamente, y se declara así
+para transparencia metodológica.
+
+**Riesgo del supuesto:** si Medellín tiene particularidades locales (ej.
+una EPS con problemas específicos de operación en la ciudad, o un tipo de
+servicio con mayor demanda relativa), esta desagregación proporcional no
+las capturaría. Se recomienda como trabajo futuro validar este supuesto
+si se logra acceso a datos desagregados directamente por ciudad y motivo.
