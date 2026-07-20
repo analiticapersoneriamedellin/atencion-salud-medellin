@@ -2,123 +2,143 @@
 
 ## Metodología general
 
-Se adopta CRISP-ML(Q) (Cross-Industry Standard Process for Machine Learning
-with Quality assurance) como marco de trabajo, cubriendo comprensión del
-problema, adquisición y preparación de datos, ingeniería de variables,
-modelado, evaluación y despliegue.
+Se adopta CRISP-ML(Q) como marco de trabajo: comprensión del problema,
+adquisición y preparación de datos, ingeniería de variables, modelado,
+evaluación y despliegue, con controles de calidad en cada fase.
 
-## 1. Comprensión del problema
+## 1. Fuentes de datos
 
-Ver `planteamiento_problema.md`. Objetivo: analizar la atención oportuna en
-salud en Medellín (tiempos de atención, asignación de citas, autorizaciones,
-PQRS, acceso a especialistas, servicios de urgencias), para apoyar la labor
-de vigilancia de derechos de la Personería Distrital de Medellín — según el
-plan de desarrollo registrado oficialmente ante los organizadores del
-concurso (Reto ID 117, Equipo ID 330).
+### 1.1 Casos de dengue (fuente principal)
+**SIVIGILA, vía MEData** (Alcaldía de Medellín) — dataset ID `1-026-22-000135`.
+53.813 casos individuales, 2008-2021, con 38 variables (demografía,
+síntomas clínicos, clasificación de gravedad, hospitalización, barrio,
+comuna). Ver `docs/fuentes_datos.md` para el detalle completo.
 
-## 2. Fuente de datos
+### 1.2 Clima histórico
+**IDEAM**, vía datos.gov.co — temperatura (`sbwg-7ju4`) y precipitación
+(`s54a-sgyg`), estaciones de Medellín (Aeropuerto Olaya Herrera, Pajarito).
+Temperatura: histórico desde 2005. Precipitación: histórico real y
+consistente **solo desde 2016-2017** (confirmado empíricamente — antes de
+esa fecha el sensor de precipitación no reportaba de forma consistente en
+las estaciones de Medellín).
 
-**Superintendencia Nacional de Salud (Supersalud)** — reportes periódicos
-"año corrido" de Peticiones, Quejas, Reclamos y Denuncias (PQRD) en salud,
-descargados en formato Excel desde el portal oficial de Supersalud. Ver
-`fuentes_datos.md` para el detalle de cada archivo usado.
+### 1.3 Población por comuna
+**DANE / Alcaldía de Medellín**, vía MEData — Proyecciones de Población
+por comuna y corregimiento 2018-2030 (Contrato interadministrativo
+4600085225 de 2020, base Censo 2018). No cubre 2017; se usó la población
+de 2018 como aproximación para ese año (supuesto documentado, ver sección 6).
 
-Cada archivo trae 11 tablas: total nacional, por tipo de riesgo, por canal
-de radicación, por departamento, por capital de departamento (incluye
-Medellín), por macromotivo, por motivo específico, por EPS (contributivo,
-subsidiado, indígena) y por otro tipo de vigilado (incluye Dirección
-Seccional de Salud de Antioquia).
+## 2. Ventana de análisis: 2017-2021
 
-## 3. HALLAZGO METODOLÓGICO CONFIRMADO: cambio de taxonomía a mitad de 2023
+Aunque el dengue cubre 2008-2021 y la temperatura tiene histórico desde
+2005, la precipitación solo tiene cobertura confiable desde 2017. Se
+definió esta ventana como el período de análisis principal para garantizar
+que ambas variables climáticas estén disponibles simultáneamente.
 
-Al inspeccionar los archivos crudos y validar la extracción con los datos
-reales (no solo con la descripción teórica de Supersalud), se confirmó que
-la taxonomía de "motivos específicos" de reclamo **cambió de forma gradual
-a mediados de 2023**, no de un año completo a otro:
+## 3. Intento de modelo predictivo (Random Forest) — documentado como aprendizaje metodológico
 
-- **Enero 2021 – Junio 2023:** taxonomía LEGACY. 10 motivos orientados a
-  especialidades médicas y trámites clínicos (ej. "falta de oportunidad en
-  cita con especialista", "demora en programación de exámenes de
-  laboratorio", "falta de oportunidad en programación de cirugía").
-  También usa la clasificación "TIPO DE PQRD" (categorías
-  REGULARES/SIS), no "tipo de riesgo".
-- **Julio 2023 en adelante:** taxonomía NUEVA. 9-10 motivos orientados a
-  barreras de acceso y autorizaciones (ej. "negación en la asignación de
-  citas", "falta de oportunidad en autorización de tecnologías",
-  "negación para la entrega de tecnologías en salud"). Usa la
-  clasificación "TIPO DE RIESGO" (SIMPLE / PRIORIZADO / RIESGO VITAL).
-  La categoría "falta de oportunidad en el proceo de referencia y
-  contrarreferencia" se incorporó un poco más tarde, ya en 2024.
+Siguiendo el documento de estrategia inicial del equipo, se entrenó un
+Random Forest Regressor para predecir el número de casos de dengue de la
+semana siguiente, usando temperatura y precipitación rezagadas (lags de 2
+y 4 semanas) como predictores.
 
-**Implicación para el modelado:** el archivo de 2023 contiene AMBAS
-taxonomías (legacy en enero-junio, nueva en julio-octubre) — esto es un
-reflejo real de los datos, no un error de extracción. Se decidió tratar
-cada taxonomía como una serie separada (`motivo_especifico_legacy_2021_2023`
-y `motivo_especifico_2024_2026` en el dataset consolidado), sin intentar
-reconciliarlas en una sola categoría, para no introducir distorsión
-artificial. El período de mayor consistencia y riqueza para el componente
-de IA es **julio 2023 en adelante** (taxonomía nueva).
+**Resultado con validación temporal (entrenamiento 2017-2018, validación
+2019), a nivel de agregación semana-comuna:** R² = -0,06 (peor que
+predecir el promedio histórico). **A nivel de agregación semana-ciudad**
+(sumando todas las comunas): R² = -0,01, con MAE de 7,06 casos frente a un
+MAE de línea base ingenua similar.
 
-## 4. Preparación de datos
+**Diagnóstico:** con ~250 puntos semanales disponibles (5 años x 52
+semanas) y una tendencia temporal muy fuerte (caída del 90% entre 2017 y
+2021, ver sección 4), el modelo no logra generalizar de forma confiable:
+la variable `año` explica por sí sola cerca de la mitad de la importancia
+del modelo, evidenciando que el volumen de datos es insuficiente para que
+la señal climática se distinga de la tendencia temporal dominante.
 
-- Extracción automatizada por búsqueda de texto (no por posición fija de
-  fila/columna), dado que las tablas se desplazan de fila entre archivos
-  de distintos años. Ver `src/parse_pqrd.py`.
-- Los meses sin datos (archivos "año corrido" de meses intermedios) se
-  tratan como valores nulos explícitos, nunca como cero.
-- Normalización de texto (mayúsculas, sin tildes) para hacer robusta la
-  búsqueda ante variaciones de formato entre archivos.
+**Decisión metodológica:** en lugar de forzar un modelo de regresión con
+bajo poder predictivo, el proyecto reorienta el componente de IA hacia
+análisis descriptivo riguroso y detección de anomalías (sección 5), que
+son más robustos ante volúmenes de datos limitados y no requieren
+generalizar a datos futuros no vistos.
 
-## 5. Variables consideradas
+## 4. Hallazgo 1: tendencia y tasa de incidencia real
 
-Ver `data_dictionary.md` (pendiente de completar con el detalle final una
-vez definida la variable objetivo del modelo).
+Se calculó la tasa de incidencia (casos / población x 100.000 habitantes)
+por comuna y año, en lugar de usar solo conteos crudos, siguiendo la misma
+metodología que usa oficialmente la Secretaría de Salud de Medellín en su
+dataset "Dengue Geográfico".
 
-## 6. Limitaciones metodológicas reconocidas
+**Resultado:** la tasa de incidencia promedio cayó de 80,7 (2017) a 8,2
+(2021) casos por 100.000 habitantes — una reducción del 90%, consistente
+en todas las comunas.
 
-- La fuente es un reporte agregado/tabular publicado por Supersalud, no
-  microdatos de caso individual — el análisis es a nivel de volumen
-  agregado mensual por categoría, no de trazabilidad de casos puntuales.
-- El cambio de taxonomía a mitad de 2023 limita la comparabilidad directa
-  de "motivos específicos" antes y después de julio 2023.
-- El foco geográfico del componente de IA se concentra en Medellín/Antioquia
-  (alineado al plan registrado), aunque la fuente permite en principio
-  extender el análisis a otros departamentos/capitales si el tiempo lo
-  permite.
+## 5. Hallazgo 2: efecto "punta del iceberg" (detección de anomalías / proxy de subregistro)
 
-## 7. Limitación de granularidad geográfica y supuesto adoptado
+Se calculó la proporción de casos hospitalizados sobre el total de casos
+notificados, por año, usando la variable `pac_hos_` del dataset SIVIGILA.
 
-**Limitación confirmada:** el reporte de Supersalud NO cruza motivo
-específico × ciudad. La tabla "por capital de departamento" da el volumen
-total de reclamos de Medellín (sin desglose por motivo), y la tabla "por
-motivo específico" da el desglose por motivo a nivel NACIONAL (sin
-desglose por ciudad). No existe en esta fuente un dato directo de
-"cuántos reclamos por motivo X hubo en Medellín".
+**Resultado:**
 
-**Supuesto adoptado (DECISIÓN METODOLÓGICA EXPLÍCITA, declarada ante el
-jurado):** se asume que la composición porcentual de motivos específicos
-a nivel nacional es representativa de la composición de motivos en
-Medellín. Bajo este supuesto, se estima el volumen mensual de reclamos por
-motivo específico en Medellín como:
+| Año | Casos totales | % Hospitalizados |
+|---|---|---|
+| 2017 | 2.154 | 15,3% |
+| 2018 | 1.188 | 14,6% |
+| 2019 | 1.236 | 21,4% |
+| 2020 | 629 | 25,0% |
+| 2021 | 240 | 43,8% |
 
-```
-reclamos_estimados(motivo, mes, Medellín) =
-    reclamos_totales(mes, Medellín) × proporción_nacional(motivo, mes)
-```
+La proporción de hospitalizados casi se triplicó mientras el volumen
+total caía 90%. Esto es la firma característica de subregistro: los casos
+graves, que requieren atención hospitalaria y no pueden pasar
+desapercibidos, se siguen captando; los casos leves, que dependen de que
+el paciente busque atención voluntariamente, dejan de notificarse en una
+proporción creciente.
 
-donde `proporción_nacional(motivo, mes)` = reclamos nacionales de ese
-motivo en ese mes / total nacional de reclamos en ese mes.
+**Nota de calidad de dato:** se intentó un segundo indicador (proporción
+de "dengue grave" según la variable `clas_dengue`), pero se encontró que
+esta variable tiene una discontinuidad de codificación severa: los códigos
+de gravedad no se usaron en 2017-2019, cambiaron radicalmente en 2020, y
+el campo quedó sin diligenciar ("SD") en el 100% de los casos de 2021. Esta
+discontinuidad se documenta como evidencia adicional (no como indicador
+cuantitativo confiable) de disrupción del sistema de captura de datos
+clínicos durante el período de pandemia.
 
-**Justificación del supuesto:** Medellín es la segunda ciudad más poblada
-de Colombia y su sistema de salud opera bajo el mismo marco regulatorio
-y las mismas EPS que operan a nivel nacional, por lo que no hay razón
-estructural fuerte para esperar que la composición de motivos difiera
-drásticamente de la nacional. Sin embargo, esto es un supuesto de
-proporcionalidad, no un dato observado directamente, y se declara así
-para transparencia metodológica.
+## 6. Hallazgo 3: respaldo de literatura científica
 
-**Riesgo del supuesto:** si Medellín tiene particularidades locales (ej.
-una EPS con problemas específicos de operación en la ciudad, o un tipo de
-servicio con mayor demanda relativa), esta desagregación proporcional no
-las capturaría. Se recomienda como trabajo futuro validar este supuesto
-si se logra acceso a datos desagregados directamente por ciudad y motivo.
+Un estudio revisado por pares ("Integrated vector management program in
+the framework of the COVID-19 pandemic in Medellín, Colombia", *PMC*)
+documenta que el programa de vigilancia entomológica de la ciudad cambió
+de metodología durante 2018-2021: la vigilancia domiciliaria se sustituyó
+por vigilancia institucional debido a la pandemia. Esta es una
+confirmación externa e independiente, documentada por pares académicos,
+de que el sistema de captación de información sobre dengue en Medellín
+sufrió una disrupción real durante exactamente el período analizado.
+
+## 7. Síntesis de la pregunta de investigación
+
+Los tres hallazgos, obtenidos de forma independiente (tasas de incidencia,
+proporción de hospitalizados, y literatura externa), apuntan en la misma
+dirección: la caída del 90% en dengue notificado es más consistente con
+subregistro creciente que con una mejora epidemiológica real. No se
+descarta que exista también una mejora real subyacente (ej. por control
+vectorial efectivo) — la evidencia disponible no permite separar
+completamente ambos efectos, pero sí permite afirmar que **el patrón
+observado no puede interpretarse como una mejora real sin cuestionamiento**.
+
+## 8. Limitaciones metodológicas reconocidas
+
+- El modelo predictivo de conteo exacto (Random Forest) no alcanzó poder
+  predictivo aceptable con el volumen de datos disponible — documentado
+  como resultado honesto, no ocultado.
+- La población de 2017 se aproximó con la de 2018 (dataset de población
+  no cubre 2017).
+- Seis comunas/corregimientos requirieron un mapeo manual de nombres entre
+  el dataset de dengue y el de población, por diferencias de tildes y
+  estructura de nombre (documentado en `src/analisis_incidencia_iceberg.py`).
+- El clima es a nivel de ciudad (estaciones puntuales), no por comuna —
+  todas las comunas de una misma semana comparten el mismo dato climático.
+- La variable `clas_dengue` no es confiable como indicador cuantitativo
+  por su discontinuidad de codificación entre años (ver sección 5).
+- No se descarta la posibilidad de que la caída de casos combine
+  subregistro real con una mejora epidemiológica genuina; este análisis no
+  permite cuantificar la proporción de cada efecto por separado.
