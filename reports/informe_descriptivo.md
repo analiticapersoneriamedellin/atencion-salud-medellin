@@ -1,78 +1,135 @@
-# Informe Descriptivo: Vigilancia de Atención Oportuna en Salud en Medellín
+# Informe Descriptivo: Vigilancia Epidemiológica de Dengue en Medellín
 
 **Concurso Datos al Ecosistema 2026: IA para Colombia — Ministerio TIC**
 **Reto:** Salud y Bienestar (ID 117) — Equipo 330
 **Elaborado para:** Personería Distrital de Medellín
-**Fuente de datos:** Superintendencia Nacional de Salud (Supersalud), reportes PQRD 2021-2026
+**Fuentes:** SIVIGILA/MEData (casos de dengue), IDEAM (clima), DANE/Alcaldía de Medellín (población)
 **Fecha del análisis:** Julio de 2026
 
 ---
 
 ## 1. Resumen ejecutivo
 
-Este análisis integra los reportes oficiales de Peticiones, Quejas, Reclamos y Denuncias (PQRD) en salud publicados por la Superintendencia Nacional de Salud entre 2021 y 2026, con el objetivo de identificar patrones de demora, barreras de acceso y riesgos de vulneración del derecho a la salud en Medellín, como insumo para la labor de vigilancia de la Personería Distrital.
+Este análisis examina la evolución de los casos de dengue notificados en
+Medellín entre 2017 y 2021, encontrando una caída del 90% en la tasa de
+incidencia (de 80,7 a 8,2 casos por 100.000 habitantes). En lugar de
+interpretar esta caída como una mejora automática, el proyecto investiga
+si refleja **subregistro creciente** — es decir, una pérdida de capacidad
+del sistema de salud para detectar y notificar casos, más que una
+reducción real de la transmisión de la enfermedad.
 
-Se identificaron **tres hallazgos principales**:
+Se encontraron **tres líneas de evidencia independientes** que apuntan en
+la misma dirección:
 
-1. Los reclamos en salud en Medellín se **casi triplicaron** entre 2021 y 2025-2026.
-2. **Septiembre de 2025** presentó una falla sistémica: siete de los diez motivos de reclamo alcanzaron niveles de riesgo alto simultáneamente.
-3. **"Falta de oportunidad en el proceso de referencia y contrarreferencia"** es un problema emergente con tendencia de crecimiento sostenido en 2026, a diferencia de otros motivos que se normalizaron después del pico de 2025.
-
----
-
-## 2. Hallazgo 1: Tendencia sostenida de crecimiento en los reclamos
-
-El volumen mensual de reclamos en salud en Medellín pasó de un rango de 6.000-8.000 reclamos mensuales en 2021 a picos de 18.000-19.000 reclamos mensuales en 2025, lo que representa un incremento aproximado del **164% entre el primer y el último mes analizado**.
-
-Esta tendencia es sostenida a lo largo de cinco años, no un evento aislado, lo que sugiere un deterioro progresivo y estructural en el acceso a servicios de salud en la ciudad, más que fluctuaciones puntuales.
-
-**Implicación para la Personería:** el crecimiento del volumen de reclamos, por sí solo, ya constituye evidencia cuantitativa de un problema creciente que amerita seguimiento sistemático, independientemente de los motivos específicos.
-
----
-
-## 3. Hallazgo 2: Pico sistémico en septiembre de 2025
-
-Al desagregar los reclamos por motivo específico, se identificó que en **septiembre de 2025** siete de los diez motivos de reclamo monitoreados alcanzaron simultáneamente su nivel de riesgo más alto del período analizado:
-
-- Negación en la asignación de citas o consultas
-- Falta de oportunidad en las citas o consultas
-- Falta de oportunidad en la autorización de citas de consulta
-- Falta de oportunidad en la autorización de otros servicios de salud
-- Falta de oportunidad en la autorización de tecnologías en salud
-- Negación en la atención en otros servicios de salud
-- Falta de oportunidad en la atención en otros servicios de salud
-
-Que múltiples motivos —que en principio corresponden a distintos puntos del proceso de atención (asignación de citas, autorizaciones, prestación de servicios)— se deterioren al mismo tiempo sugiere una **falla generalizada del sistema en ese período**, no un problema aislado de un solo trámite o servicio.
-
-**Implicación para la Personería:** este tipo de pico simultáneo en múltiples frentes es la señal de alerta más fuerte identificada en el análisis, y sería el punto de partida recomendado para una indagación específica (por ejemplo, verificar si coincidió con una contingencia operativa de alguna EPS con alta participación en Medellín, cambios normativos, u otro evento puntual del sistema de salud en esas fechas).
+1. La proporción de casos hospitalizados sobre el total **casi se
+   triplicó** (15,3% a 43,8%) mientras el volumen total caía.
+2. La calidad del registro de clasificación clínica de gravedad se
+   deterioró severamente durante 2020-2021.
+3. Un estudio científico independiente confirma que el programa de
+   vigilancia entomológica de la ciudad cambió de metodología durante la
+   pandemia (2018-2021).
 
 ---
 
-## 4. Hallazgo 3: Riesgo emergente en referencia y contrarreferencia
+## 2. Hallazgo 1: la caída de casos, medida correctamente
 
-El motivo "falta de oportunidad en el proceso de referencia y contrarreferencia" (traslado de pacientes entre niveles de atención, por ejemplo de un centro de atención primaria hacia un especialista o un hospital de mayor complejidad) muestra un comportamiento distinto al resto: **mientras los demás motivos se normalizaron después del pico de septiembre-octubre 2025, este continuó en niveles de riesgo alto en enero, marzo y abril de 2026**.
+Usando la tasa de incidencia (casos por 100.000 habitantes, no solo
+conteos crudos) y las proyecciones oficiales de población por comuna, se
+confirma que la caída no es un artefacto del crecimiento poblacional: la
+tasa de incidencia promedio en Medellín pasó de **80,7 casos por 100.000
+habitantes en 2017 a 8,2 en 2021**.
 
-**Implicación para la Personería:** a diferencia del hallazgo anterior (un pico puntual ya ocurrido), este es un problema activo y en curso al momento de este análisis. Representa la alerta con mayor relevancia para una acción de vigilancia inmediata, dado que la tendencia no muestra señales de autocorrección.
-
----
-
-## 5. Nota metodológica (transparencia sobre el alcance del análisis)
-
-Los reportes de Supersalud publican el volumen total de reclamos por ciudad (incluyendo Medellín) y, por separado, el desglose por motivo específico a nivel nacional, pero no cruzan ambas dimensiones en un solo dato. Para este análisis, el volumen de reclamos por motivo específico en Medellín se **estimó aplicando la proporción nacional de cada motivo al volumen total de reclamos de Medellín** en cada mes.
-
-Este es un supuesto de proporcionalidad, no un dato observado directamente. Se considera razonable dado que Medellín opera bajo el mismo marco regulatorio y las mismas EPS que actúan a nivel nacional, pero no captura eventuales particularidades locales. El detalle completo de esta decisión metodológica, junto con el cambio de taxonomía de motivos que Supersalud introdujo a mediados de 2023, se documenta en `docs/marco_metodologico.md` del repositorio técnico del proyecto.
+**Implicación para la Personería:** una caída de esta magnitud amerita
+verificación — no es prudente asumir automáticamente que refleja éxito en
+el control del dengue sin contrastarla con otros indicadores.
 
 ---
 
-## 6. Recomendaciones para la labor de vigilancia
+## 3. Hallazgo 2: el efecto "punta del iceberg"
 
-1. **Priorizar el seguimiento del motivo "referencia y contrarreferencia"** en los próximos meses, dado que es el único con tendencia de deterioro activo y sin señales de mejora al cierre de este análisis.
-2. **Solicitar información puntual sobre septiembre de 2025** a las entidades de salud con mayor participación en Medellín, para esclarecer las causas del pico sistémico identificado.
-3. **Establecer un monitoreo periódico** (mensual o trimestral) de los reportes PQRD de Supersalud, replicando la metodología de este análisis, para detectar tempranamente picos similares en el futuro.
-4. **Explorar el acceso a datos desagregados directamente por ciudad y motivo** (si Supersalud o el Ministerio de Salud los ponen a disposición), para eliminar el supuesto de proporcionalidad nacional y ganar precisión territorial.
+| Año | Casos notificados | % Hospitalizados |
+|---|---|---|
+| 2017 | 2.154 | 15,3% |
+| 2018 | 1.188 | 14,6% |
+| 2019 | 1.236 | 21,4% |
+| 2020 | 629 | 25,0% |
+| 2021 | 240 | **43,8%** |
+
+Cuando el volumen total de casos notificados cae, pero la proporción de
+casos que terminan hospitalizados sube de forma sostenida, es una señal
+característica de que **solo los casos más graves —los que no se pueden
+ocultar porque requieren atención hospitalaria— siguen siendo captados
+por el sistema**. Los casos leves, que dependen de que la persona busque
+atención médica voluntariamente, parecen estar quedando cada vez más por
+fuera del registro oficial.
+
+**Implicación para la Personería:** este patrón es consistente con
+barreras de acceso a la atención en salud, un asunto directamente
+relacionado con el derecho fundamental a la salud.
+
+---
+
+## 4. Hallazgo 3: respaldo de literatura científica independiente
+
+Un estudio publicado en una revista científica revisada por pares
+(disponible en PMC) documenta que, durante la pandemia de COVID-19, el
+programa de vigilancia y control de vectores de Medellín tuvo que
+modificar su metodología: la vigilancia entomológica domiciliaria fue
+sustituida por vigilancia desde el entorno institucional, como medida de
+bioseguridad. Este cambio documentado coincide exactamente con el período
+en que se observa la mayor caída de casos notificados.
+
+**Implicación para la Personería:** existe evidencia externa e
+independiente, no generada por este proyecto, de que la capacidad de
+vigilancia de enfermedades transmitidas por vector en la ciudad se vio
+comprometida durante el período analizado.
+
+---
+
+## 5. Nota metodológica sobre el componente predictivo
+
+Se evaluó la posibilidad de construir un modelo de inteligencia artificial
+que predijera el número exacto de casos de dengue esperados cada semana,
+usando variables climáticas. La validación rigurosa (entrenando con años
+pasados y evaluando contra un año no visto por el modelo) mostró que el
+volumen de datos disponible no es suficiente para que dicho modelo
+generalice de forma confiable — resultado documentado con transparencia en
+`docs/marco_metodologico.md`, incluyendo la comparación contra una línea
+base simple. En lugar de presentar una predicción poco confiable, el
+proyecto prioriza el análisis descriptivo riguroso y la detección de
+patrones anómalos, que sí son robustos con los datos disponibles.
+
+---
+
+## 6. Recomendaciones para la labor de vigilancia de la Personería
+
+1. **Solicitar a la Secretaría de Salud de Medellín una explicación formal
+   sobre la evolución del programa de vigilancia entomológica** desde la
+   pandemia hasta la actualidad — en particular, si la vigilancia
+   domiciliaria ya se restableció, y con qué cobertura territorial.
+
+2. **Priorizar el seguimiento de comunas con tasas de incidencia
+   históricamente altas**, verificando si la asignación de recursos de
+   control vectorial (fumigación, entrega de toldillos) es proporcional al
+   riesgo epidemiológico real de cada territorio.
+
+3. **Indagar sobre el acceso oportuno a diagnóstico temprano de dengue**,
+   dado que el aumento en la proporción de casos hospitalizados sugiere que
+   los pacientes podrían estar llegando al sistema de salud en etapas más
+   avanzadas de la enfermedad.
+
+4. **Promover el monitoreo periódico de este tipo de indicador** (tasa de
+   incidencia vs. proporción de casos graves) como herramienta de alerta
+   temprana ante posibles fallas de captación del sistema de vigilancia,
+   replicable a otras enfermedades de notificación obligatoria.
 
 ---
 
 ## 7. Producto técnico asociado
 
-Este informe se acompaña de un dashboard interactivo (desarrollado en Streamlit) que permite explorar la evolución temporal, el mapa de riesgo por motivo y mes, y las alertas activas de forma dinámica. El código fuente, los datos procesados y la documentación técnica completa están disponibles en el repositorio público del proyecto en GitHub.
+Este informe se acompaña de un dashboard interactivo que permite explorar
+la evolución de la tasa de incidencia por comuna, el efecto iceberg, y las
+variables climáticas asociadas. El código fuente, los datos procesados y
+la documentación técnica completa —incluyendo el análisis honesto de las
+limitaciones del componente predictivo— están disponibles en el
+repositorio público del proyecto en GitHub.
