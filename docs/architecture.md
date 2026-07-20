@@ -4,60 +4,69 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  FUENTE DE DATOS                                              │
-│  Superintendencia Nacional de Salud (Supersalud)              │
-│  Reportes PQRD "año corrido" (.xlsx), 2021-2026                │
-└───────────────────────────┬────────────────────────────────────┘
-                            ▼
+│  FUENTES DE DATOS                                              │
+│  SIVIGILA/MEData (dengue) │ IDEAM (clima) │ DANE (población)   │
+└───────────┬─────────────────────┬──────────────────┬────────────┘
+            ▼                     ▼                  ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  CAPA DE EXTRACCIÓN Y CONSOLIDACIÓN                            │
-│  src/parse_pqrd.py                                             │
-│  - Búsqueda de tablas por texto (no por posición fija de fila) │
-│  - Extracción: Medellín, Antioquia, Dirección Seccional Salud, │
-│    motivos específicos (2 taxonomías: legacy y nueva)          │
-│  - Normalización de meses sin datos (None, no cero falso)      │
-│  → data/processed/pqrd_consolidado.csv                         │
-└───────────────────────────┬────────────────────────────────────┘
-                            ▼
+│  CAPA DE INGESTA                                                │
+│  src/ingest_clima.py -- descarga histórica IDEAM (por año,     │
+│  con reintentos, evitando el problema de offsets altos)        │
+└───────────┬───────────────────────────────────────────────────┘
+            ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  CAPA DE INGENIERÍA DE VARIABLES Y ANÁLISIS                    │
-│  notebooks/01_analisis_exploratorio.ipynb                      │
-│  - Desagregación proporcional de motivos a nivel Medellín      │
-│    (supuesto documentado en docs/marco_metodologico.md)        │
-│  - Variables derivadas: variación %, promedio móvil, z-score   │
-│  → data/processed/medellin_dataset_modelo.csv                  │
-└───────────────────────────┬────────────────────────────────────┘
-                            ▼
+│  CAPA DE CONSOLIDACIÓN Y ANÁLISIS                               │
+│  src/consolidar_dengue_clima.py -- cruce dengue+clima,          │
+│    variables de rezago (lags), usado en el intento de modelo    │
+│  src/analisis_incidencia_iceberg.py -- los 3 pilares centrales: │
+│    1. Tasa de incidencia real (dengue + población)               │
+│    2. Efecto "punta del iceberg" (proporción de hospitalizados) │
+│    3. (Literatura científica externa, no automatizada)          │
+└───────────┬───────────────────────────────────────────────────┘
+            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  CAPA DE MODELADO (IA)                                          │
-│  Detección de anomalías basada en z-score respecto al           │
-│  histórico de cada motivo específico                            │
-│  Clasificación de riesgo: bajo / medio / alto                   │
-└───────────────────────────┬────────────────────────────────────┘
-                            ▼
+│  src/train_modelo_dengue.py -- Random Forest (intento           │
+│    documentado, resultado no satisfactorio, ver                 │
+│    docs/marco_metodologico.md sección 3)                        │
+│  Detección de anomalías / análisis descriptivo (componente      │
+│    de IA final usado, más robusto con el volumen de datos       │
+│    disponible)                                                  │
+└───────────┬───────────────────────────────────────────────────┘
+            ▼
 ┌─────────────────────────────────────────────────────────────┐
 │  CAPA DE PRESENTACIÓN                                            │
 │  dashboard/app.py (Streamlit + Plotly)                          │
-│  - KPIs principales                                              │
-│  - Tendencia general (línea + promedio móvil)                   │
-│  - Mapa de calor de riesgo por motivo y mes                      │
-│  - Alertas activas filtrables, con exportación CSV               │
+│  - Tendencia e incidencia                                       │
+│  - Efecto iceberg (barras + línea combinada)                    │
+│  - Comparación por comuna                                       │
+│  - Hallazgos y recomendaciones para la Personería                │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## Principio de diseño
 
-Cada capa es independiente: se puede reemplazar la fuente de datos, el método de modelado, o la herramienta de visualización, sin reescribir las demás capas. Por ejemplo, si en el futuro se obtiene acceso a datos de Medellín desagregados directamente por motivo (eliminando el supuesto de proporcionalidad), solo cambiaría la capa de ingeniería de variables, no el resto del pipeline.
+Cada capa es independiente y reemplazable. El componente de modelado
+predictivo (Random Forest) se mantiene en el repositorio como evidencia
+transparente de un intento metodológico riguroso, aunque no forma parte
+del flujo final de producción del dashboard — esta decisión de diseño
+prioriza la honestidad metodológica sobre presentar únicamente los
+resultados favorables.
 
 ## Componente de Inteligencia Artificial
 
-| Componente | Ubicación | Descripción |
+| Componente | Ubicación | Estado |
 |---|---|---|
-| Detección de anomalías (z-score) | Notebook de análisis / `medellin_dataset_modelo.csv` | Identifica meses donde el volumen de un motivo específico se aleja significativamente de su comportamiento histórico |
-| Clasificación de riesgo | Mismo dataset, columna `nivel_riesgo` | Traduce el z-score en una categoría interpretable (bajo/medio/alto) para facilitar la lectura no técnica |
+| Random Forest Regressor (predicción de conteo semanal) | `src/train_modelo_dengue.py` | Implementado y evaluado; resultado documentado como no satisfactorio (R² ≈ 0, comparable a línea base ingenua) |
+| Detección de patrones / análisis descriptivo riguroso | `src/analisis_incidencia_iceberg.py` | Componente de IA/analítica final usado en el dashboard — más robusto ante el volumen de datos real disponible |
 
 ## Decisiones de arquitectura explícitamente descartadas
 
-- **Microservicios / API dedicada:** el volumen y la frecuencia de actualización de los datos (reportes mensuales de Supersalud) no justifican una arquitectura de servicios en producción continua.
-- **Bases de datos relacionales/NoSQL dedicadas:** el volumen de datos (cientos de filas consolidadas) se maneja adecuadamente con archivos CSV; una base de datos añadiría complejidad operativa sin beneficio real para el alcance de este proyecto.
-- **Procesamiento distribuido (Spark/Flink):** no aplica al volumen de datos de este proyecto.
+- **Modelo predictivo como componente central:** se intentó, se
+  documentó honestamente su bajo desempeño, y se decidió no forzarlo como
+  la pieza central del proyecto (ver `docs/marco_metodologico.md`).
+- **Procesamiento distribuido (Spark/Flink), microservicios, bases de
+  datos dedicadas:** no se justifican para el volumen de datos de este
+  proyecto (decenas de miles de filas, no millones).
+- **Ingesta en tiempo real:** las tres fuentes usadas (SIVIGILA, IDEAM
+  histórico, DANE) se publican por lotes periódicos, no en streaming.
