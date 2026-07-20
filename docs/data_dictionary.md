@@ -1,70 +1,94 @@
 # Diccionario de Datos
 
-Corresponde al dataset consolidado `data/processed/pqrd_consolidado.csv`,
-generado por `src/parse_pqrd.py`.
+## 1. Fuente: casos de dengue (`data/raw/sivigila_dengue.csv`)
 
-## Estructura del archivo consolidado (formato largo/tidy)
+Dataset original de SIVIGILA vía MEData (Alcaldía de Medellín), 53.813
+filas, 38 columnas. Columnas usadas activamente en el análisis:
+
+| Columna | Tipo | Descripción | Uso en el proyecto |
+|---|---|---|---|
+| `id` | Numérico | Identificador único del caso | Conteo de casos |
+| `semana` | Numérico | Semana epidemiológica | Agregación temporal |
+| `year_` (renombrada a `anio`) | Numérico | Año del caso | Filtro de ventana 2017-2021, tendencia |
+| `comuna` | Texto | Comuna/corregimiento de residencia | Desagregación territorial, tasa de incidencia |
+| `nombre_barrio` | Texto | Barrio | No usado en esta versión (posible trabajo futuro) |
+| `fec_con_` | Fecha | Fecha de consulta | No usado activamente en esta versión |
+| `ini_sin_` | Fecha | Fecha de inicio de síntomas | No usado activamente en esta versión |
+| `clas_dengue` | Categórica (código) | Clasificación de gravedad (1=sin signos alarma, 2=con signos alarma, 3=grave) | Indicador secundario de iceberg — **con limitación de calidad de dato documentada** (discontinuidad de codificación entre años) |
+| `pac_hos_` | Categórica (código, viene como texto) | Hospitalización (1=sí, 2=no) | Indicador principal de "efecto iceberg" |
+
+## 2. Fuente: clima histórico IDEAM
+
+### Temperatura (`data/raw/ideam_temperatura_medellin_semanal.csv`)
+Agregado semanal (promedio) desde el crudo horario de las estaciones
+Aeropuerto Olaya Herrera y Pajarito. Histórico real: 2005-2026.
+
+### Precipitación (`data/raw/ideam_precipitacion_medellin_semanal.csv`)
+Agregado semanal (suma) desde el crudo horario. Histórico real y
+consistente: **2017-2024** (antes de 2016-2017 el sensor no reportaba de
+forma confiable en las estaciones de Medellín — limitación confirmada
+empíricamente, no supuesta).
 
 | Columna | Tipo | Descripción |
 |---|---|---|
-| `anio` | Entero | Año del reporte (2021-2026). |
-| `mes` | Categórica (texto) | Mes abreviado en español: ENE, FEB, MAR, ABR, MAY, JUN, JUL, AGO, SEP, OCT, NOV, DIC. |
-| `tabla_origen` | Categórica | De cuál de las 11 tablas del reporte Supersalud proviene el registro. Valores: `capital_departamento`, `departamento`, `otro_vigilado`, `motivo_especifico_2024_2026`, `motivo_especifico_legacy_2021_2023`. |
-| `categoria` | Categórica (texto) | Nombre específico dentro de la tabla de origen (ej. "MEDELLIN", "ANTIOQUIA", o el texto truncado del motivo específico). |
-| `valor` | Numérico | Número de reclamos reportados para esa categoría, mes y año. |
+| `anio` | Numérico | Año |
+| `semana` | Numérico | Semana epidemiológica (ISO) |
+| `nombreestacion` | Texto | Estación IDEAM de origen |
+| `temperatura_promedio` | Numérico (°C) | Promedio semanal de temperatura |
+| `precipitacion_acumulada` | Numérico (mm) | Suma semanal de precipitación |
 
-## Valores posibles de `categoria` por `tabla_origen`
+## 3. Fuente: población por comuna (`data/raw/poblacion_comunas_medellin.csv`)
 
-### `capital_departamento`
-- `MEDELLIN`
+Proyecciones DANE/Alcaldía de Medellín 2018-2030, formato ancho (una
+columna por año: `total_2018` ... `total_2030`), transformado a formato
+largo en `src/analisis_incidencia_iceberg.py`.
 
-### `departamento`
-- `ANTIOQUIA`
+| Columna original | Descripción |
+|---|---|
+| `nombre` | Nombre de la comuna/corregimiento (con tildes) |
+| `total_YYYY` | Población proyectada para ese año |
 
-### `otro_vigilado`
-- `DIRECCION_SECCIONAL_SALUD_ANTIOQUIA`
+**Nota de mapeo de nombres:** existen diferencias de tildes y estructura
+de nombre entre este dataset y el de dengue (ej. "Belen" vs. "Belén",
+"Corregimiento De San Cristobal" vs. "San Cristóbal"). Se resolvieron con
+un diccionario de equivalencias explícito (`EQUIVALENCIAS_COMUNA` en
+`src/analisis_incidencia_iceberg.py`), documentado y verificado
+manualmente.
 
-### `motivo_especifico_2024_2026` (taxonomía vigente desde julio 2023)
-- Negación para la entrega de tecnologías en salud y/o de otros servicios autorizados
-- Negación en la asignación de citas o consultas
-- Falta de oportunidad en las citas o consultas
-- Falta de oportunidad en la atención en otros servicios de salud
-- Falta de oportunidad en la entrega o entrega incompleta de tecnologías en salud
-- Negación en la atención en otros servicios de salud
-- Falta de oportunidad en la autorización de otros servicios de salud
-- Falta de oportunidad en la autorización de tecnologías en salud
-- Falta de oportunidad en la autorización de citas de consulta
-- Falta de oportunidad en el proceso de referencia y contrarreferencia (solo desde 2024)
+## 4. Datasets consolidados / de salida (`data/processed/`)
 
-### `motivo_especifico_legacy_2021_2023` (taxonomía anterior a julio 2023)
-- Falta de oportunidad en la asignación de citas de consulta médica especializada
-- Falta de oportunidad en la entrega de medicamentos POS
-- Demora de la programación de exámenes de laboratorio o diagnósticos
-- Falta de oportunidad en la programación de cirugía
-- Falta de oportunidad para la prestación de servicios de imagenología
-- No aplicación de normas, guías o protocolos de atención
-- Deficiencias en la seguridad del paciente
-- Falta de oportunidad en la entrega de medicamentos NO POS
-- Falta de oportunidad en la asignación de citas de consulta médica general
-- Deficiente información sobre derechos, deberes y trámites
+### `dengue_clima_consolidado.csv`
+Casos de dengue agregados por semana-comuna, cruzados con clima y
+variables de rezago (lags 2 y 4 semanas). Usado en el intento de modelo
+predictivo (resultado documentado en `docs/marco_metodologico.md`).
 
-## Variable objetivo (target del componente de IA) — PENDIENTE DE DEFINIR
+### `dengue_ciudad_consolidado.csv`
+Igual al anterior, pero agregado a nivel de ciudad completa (sin
+desagregar por comuna) — usado en la segunda iteración del intento de
+modelo predictivo.
 
-Opciones en evaluación (completar una vez se avance el EDA):
+### `dengue_tasa_incidencia.csv`
+| Columna | Descripción |
+|---|---|
+| `comuna` | Comuna/corregimiento |
+| `anio` | Año |
+| `casos` | Casos notificados |
+| `poblacion` | Población proyectada (2018 usada como aproximación para 2017) |
+| `tasa_incidencia_100k` | Casos por 100.000 habitantes |
 
-1. **Clasificación de riesgo/anomalía mensual:** ¿el volumen de reclamos de
-   un motivo/mes se sale del comportamiento histórico esperado? (similar al
-   concepto de "canal endémico" usado en vigilancia epidemiológica).
-2. **Predicción de volumen:** estimar el número de reclamos esperado el
-   próximo mes para un motivo específico, para anticipar picos.
-3. **Priorización/ranking:** ordenar los motivos por severidad de tendencia
-   (crecimiento sostenido) para orientar la vigilancia de la Personería.
+### `dengue_efecto_iceberg.csv`
+| Columna | Descripción |
+|---|---|
+| `anio` | Año |
+| `total_casos` | Total de casos notificados |
+| `casos_hospitalizados` | Casos con `pac_hos_ == 1` |
+| `casos_graves` | Casos con `clas_dengue == 3` (ver limitación de calidad de dato) |
+| `proporcion_hospitalizados` | Indicador principal de subregistro |
+| `proporcion_graves` | Indicador secundario (poco confiable, ver sección 1) |
 
-## Variables predictoras candidatas
+## 5. Variable objetivo original (modelo predictivo, no usado en la versión final)
 
-- `mes` (estacionalidad).
-- `anio` (tendencia de largo plazo).
-- `tabla_origen` / `categoria` (tipo de motivo).
-- Variables derivadas a construir: variación mes a mes (%), promedio móvil
-  de 3 meses, comparación Medellín vs. Antioquia (proporción del
-  departamento que corresponde a la capital).
+`casos_dengue_semana_siguiente`: casos de la semana siguiente, por
+comuna. Se mantiene documentada por transparencia metodológica, aunque el
+modelo entrenado con esta variable no alcanzó poder predictivo aceptable
+(ver `docs/marco_metodologico.md`, sección 3).
