@@ -2,3 +2,4 @@ data/raw/*.xlsx
 reports/figures/*.png
 __pycache__/
 *.pyc
+data/raw/ideam_*_crudo.csv
