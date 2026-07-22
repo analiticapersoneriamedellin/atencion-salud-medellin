@@ -98,7 +98,7 @@ Equipo 330 — Personería Distrital de Medellín
 | Recurso | Enlace |
 |---|---|
 | Dashboard interactivo (Streamlit) | https://huggingface.co/spaces/unidad-analitica-personeria/atencion-salud-medellin |
-| Presentación de la sustentación | https://app.slidesai.io/p/0c872193-8143-4f4f-a8aa-156f8eaef7de |
+| Presentación de la sustentación | https://personeriamedellingovco-my.sharepoint.com/:p:/g/personal/analitica_personeriamedellin_gov_co/IQBVGGmr1r8HQJuRljhX17fmAVkoJMCDLGueUcK-_bvmopM?e=PtZi2a |
 | PowerBi el cual presenta datos complentarios incluyendo una estructura amigable | [https://app.slidesai.io/p/0c872193-8143-4f4f-a8aa-156f8eaef7de](https://app.powerbi.com/view?r=eyJrIjoiMTE1ZWJiODgtNmJkOC00YzBjLTkyNmItOWIzMjkzNTRlNDI2IiwidCI6ImEyYmE0MzQ1LTc3NjQtNGQyMi1iNmExLTdjZjUyOGYzYjNhNSIsImMiOjR9&pageName=b069b11e664507033db4) |
 | Página web del proyecto | https://dengue-insight-hub.lovable.app/ |
 
