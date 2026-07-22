@@ -14,12 +14,12 @@ la labor de vigilancia de derechos de la Personería Distrital de Medellín.
 
 ## Hallazgos principales
 
-1. 📉 La tasa de incidencia de dengue cayó de **80,7 a 8,2 casos por
+1. La tasa de incidencia de dengue cayó de **80,7 a 8,2 casos por
    100.000 habitantes** (2017-2021), una reducción del 90%.
-2. 🧊 La proporción de casos hospitalizados **casi se triplicó** (15,3% →
+2. La proporción de casos hospitalizados **casi se triplicó** (15,3% →
    43,8%) en el mismo período — señal característica de subregistro: solo
    los casos graves siguen siendo captados por el sistema.
-3. 📚 Un estudio científico revisado por pares confirma que el programa de
+3. Un estudio científico revisado por pares confirma que el programa de
    vigilancia entomológica de Medellín cambió de metodología durante
    2018-2021, coincidiendo con el período analizado.
 
@@ -92,6 +92,15 @@ de agregación).
 ## Equipo
 
 Equipo 330 — Personería Distrital de Medellín
+
+## Recursos del Proyecto
+
+| Recurso | Enlace |
+|---|---|
+| Dashboard interactivo (Streamlit) | https://huggingface.co/spaces/unidad-analitica-personeria/atencion-salud-medellin |
+| Presentación de la sustentación | https://app.slidesai.io/p/0c872193-8143-4f4f-a8aa-156f8eaef7de |
+| PowerBi el cual presenta datos complentarios incluyendo una estructura amigable | [https://app.slidesai.io/p/0c872193-8143-4f4f-a8aa-156f8eaef7de](https://app.powerbi.com/view?r=eyJrIjoiMTE1ZWJiODgtNmJkOC00YzBjLTkyNmItOWIzMjkzNTRlNDI2IiwidCI6ImEyYmE0MzQ1LTc3NjQtNGQyMi1iNmExLTdjZjUyOGYzYjNhNSIsImMiOjR9&pageName=b069b11e664507033db4) |
+| Página web del proyecto | https://dengue-insight-hub.lovable.app/ |
 
 ## Licencia
 
