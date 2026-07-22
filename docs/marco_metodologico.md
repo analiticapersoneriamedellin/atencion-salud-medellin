@@ -142,3 +142,40 @@ observado no puede interpretarse como una mejora real sin cuestionamiento**.
 - No se descarta la posibilidad de que la caída de casos combine
   subregistro real con una mejora epidemiológica genuina; este análisis no
   permite cuantificar la proporción de cada efecto por separado.
+
+
+  ## 9. Uso de API REST (Socrata / SODA2)
+
+El componente climático de este proyecto se obtuvo mediante **conexión
+directa a la API REST oficial de datos.gov.co** (protocolo Socrata/SODA2),
+no por descarga manual de archivos. Esto se documenta explícitamente para
+dejar constancia del uso de API como mecanismo de acceso a datos abiertos.
+
+**Endpoints REST consumidos** (ver implementación completa en
+`src/ingest_clima.py`):
+
+```
+GET https://www.datos.gov.co/resource/sbwg-7ju4.json   (Temperatura, IDEAM)
+GET https://www.datos.gov.co/resource/s54a-sgyg.json   (Precipitación, IDEAM)
+```
+
+**Parámetros de consulta usados:**
+- `$limit` / `$offset`: paginación de resultados.
+- `$where`: filtro por rango de fechas (consulta por año, para evitar
+  degradación de rendimiento con offsets muy altos — ver nota técnica en
+  el propio script).
+- `municipio`: filtro por municipio (`MEDELLÍN`).
+
+**Manejo robusto de la conexión:** el script implementa reintentos
+automáticos con espera creciente (hasta 3 intentos por página) ante
+fallos de conexión, y pagina por año en vez de por offset acumulado
+único, corrigiendo un problema real de degradación de rendimiento
+detectado empíricamente durante el desarrollo (los offsets altos
+causaban timeouts consistentes).
+
+**Alcance de la conexión API en este proyecto:** la API se usa en la
+**fase de ingesta** (obtención del dato crudo histórico). El dashboard
+final consume los datos ya procesados y consolidados (`data/processed/`)
+por razones de rendimiento y estabilidad en producción — no se re-consulta
+la API en cada carga del dashboard. Esta es una decisión de arquitectura
+estándar (separar ingesta de servicio), no una limitación del uso de API.
