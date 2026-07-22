@@ -11,6 +11,7 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+from scipy import stats
 
 st.set_page_config(
     page_title="Vigilancia Dengue Medellín | Datos al Ecosistema 2026",
@@ -58,6 +59,14 @@ st.markdown("""
         margin-bottom: 10px;
         color: #fafafa !important;
     }
+    .warning-box {
+        background-color: #2d1518;
+        border-left: 4px solid #e74c3c;
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 12px;
+        color: #fafafa !important;
+    }
     button[data-baseweb="tab"] { color: #cbd5e1 !important; }
     button[data-baseweb="tab"][aria-selected="true"] { color: #ffffff !important; }
     section[data-testid="stSidebar"] { background-color: #131722; }
@@ -75,28 +84,48 @@ st.markdown("""
 COLOR_PRIMARIO = "#2ecc71"
 COLOR_ALERTA = "#e74c3c"
 COLOR_SECUNDARIO = "#3498db"
+COLOR_NARANJA = "#e67e22"
 
 # ============================================================
 # CARGA DE DATOS
 # ============================================================
 @st.cache_data
 def cargar_datos():
+    datos = {}
     try:
-        incidencia = pd.read_csv("data/processed/dengue_tasa_incidencia.csv")
-        iceberg = pd.read_csv("data/processed/dengue_efecto_iceberg.csv")
-        return incidencia, iceberg
+        datos["incidencia"] = pd.read_csv("data/processed/dengue_tasa_incidencia.csv")
+        datos["iceberg"] = pd.read_csv("data/processed/dengue_efecto_iceberg.csv")
     except FileNotFoundError:
-        return None, None
+        return None
 
-incidencia, iceberg = cargar_datos()
+    # Estos dos son opcionales -- si no existen, esas pestañas avisan
+    # en vez de romper el resto del dashboard.
+    try:
+        datos["correlacion"] = pd.read_csv("data/processed/correlacion_clima_dengue.csv")
+    except FileNotFoundError:
+        datos["correlacion"] = None
 
-if incidencia is None:
+    try:
+        datos["canal"] = pd.read_csv("data/processed/canal_endemico.csv")
+    except FileNotFoundError:
+        datos["canal"] = None
+
+    return datos
+
+datos = cargar_datos()
+
+if datos is None:
     st.error(
         "⚠️ No se encontraron los archivos de datos procesados. "
         "Ejecuta primero los scripts en src/ (ingest_clima.py, "
         "analisis_incidencia_iceberg.py) para generar los datasets."
     )
     st.stop()
+
+incidencia = datos["incidencia"]
+iceberg = datos["iceberg"]
+correlacion = datos["correlacion"]
+canal = datos["canal"]
 
 # ============================================================
 # ENCABEZADO
@@ -117,7 +146,7 @@ st.markdown("""
 st.sidebar.header("🔎 Filtros")
 comunas_disponibles = sorted(incidencia["comuna"].unique())
 comuna_sel = st.sidebar.multiselect(
-    "Comunas a mostrar (mapa de tendencia)",
+    "Comunas a mostrar (pestaña Por Comuna)",
     options=comunas_disponibles,
     default=[],
 )
@@ -155,9 +184,9 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ============================================================
 # TABS
 # ============================================================
-tab1, tab2, tab3, tab4 = st.tabs([
-    "📉 Tendencia e Incidencia", "🧊 Efecto Iceberg",
-    "🗺️ Por Comuna", "💡 Hallazgos y Recomendaciones"
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "📉 Tendencia e Incidencia", "🧊 Efecto Iceberg", "🗺️ Por Comuna",
+    "🌡️ Correlación Clima", "📡 Canal Endémico", "💡 Hallazgos y Recomendaciones"
 ])
 
 # --- TAB 1: TENDENCIA ---
@@ -253,8 +282,112 @@ with tab3:
     )
     st.plotly_chart(fig4, use_container_width=True)
 
-# --- TAB 4: HALLAZGOS ---
+# --- TAB 4: CORRELACIÓN CLIMA (NUEVA) ---
 with tab4:
+    st.subheader("Correlación entre variables climáticas y casos de dengue")
+
+    if correlacion is None:
+        st.warning(
+            "⚠️ No se encontró `data/processed/correlacion_clima_dengue.csv`. "
+            "Corre `python src/correlacion_estacionalidad.py` para generarlo."
+        )
+    else:
+        corr_ordenada = correlacion.sort_values("pearson_r")
+        colores = [COLOR_SECUNDARIO if r < 0 else COLOR_NARANJA for r in corr_ordenada["pearson_r"]]
+
+        fig5 = go.Figure(go.Bar(
+            x=corr_ordenada["pearson_r"], y=corr_ordenada["variable"],
+            orientation="h", marker_color=colores,
+            text=[f"r = {r:+.2f}" for r in corr_ordenada["pearson_r"]],
+            textposition="outside",
+            hovertemplate="%{y}<br>Pearson r = %{x:.3f}<extra></extra>",
+        ))
+        fig5.add_vline(x=0, line_color="#4b5563", line_width=1)
+        fig5.update_layout(
+            template="plotly_dark", height=420,
+            margin=dict(t=20, b=20, l=20, r=60),
+            xaxis=dict(title="Coeficiente de correlación de Pearson", gridcolor="#2d3548",
+                       range=[-0.5, 0.5]),
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+        )
+        st.plotly_chart(fig5, use_container_width=True)
+
+        n_sig = corr_ordenada["significativo_pearson_95pct"].sum()
+        st.caption(
+            f"💡 Las {n_sig} de {len(corr_ordenada)} variables climáticas son "
+            "estadísticamente significativas (p < 0.05). Hallazgo inesperado: "
+            "**más temperatura se asocia con MENOS casos** en Medellín (azul), "
+            "posiblemente por el clima templado particular de la ciudad — "
+            "contrario al patrón típico de ciudades cálidas. La "
+            "**precipitación** (naranja) sí va en la dirección biológica esperada."
+        )
+
+        with st.expander("Ver tabla completa de resultados"):
+            st.dataframe(correlacion, use_container_width=True)
+
+# --- TAB 5: CANAL ENDÉMICO (NUEVA) ---
+with tab5:
+    st.subheader("Canal endémico 2021 (método Bortman, mismo que usa el INS)")
+
+    if canal is None:
+        st.warning(
+            "⚠️ No se encontró `data/processed/canal_endemico.csv`. "
+            "Corre `python src/canal_endemico.py` para generarlo."
+        )
+    else:
+        fig6 = go.Figure()
+
+        # Banda de confianza histórica (área sombreada)
+        fig6.add_trace(go.Scatter(
+            x=canal["semana"], y=canal["canal_superior"],
+            mode="lines", line=dict(width=0), showlegend=False, hoverinfo="skip",
+        ))
+        fig6.add_trace(go.Scatter(
+            x=canal["semana"], y=canal["canal_inferior"],
+            mode="lines", line=dict(width=0), fill="tonexty",
+            fillcolor="rgba(46,204,113,0.15)", name="Banda histórica esperada",
+            hoverinfo="skip",
+        ))
+        fig6.add_trace(go.Scatter(
+            x=canal["semana"], y=canal["canal_medio"],
+            mode="lines", line=dict(color="#4b5563", width=1, dash="dot"),
+            name="Media histórica",
+        ))
+        fig6.add_trace(go.Scatter(
+            x=canal["semana"], y=canal["casos"],
+            mode="lines+markers", line=dict(color=COLOR_PRIMARIO, width=3),
+            marker=dict(size=5), name="Casos reales 2021",
+        ))
+
+        fig6.update_layout(
+            template="plotly_dark", height=450,
+            margin=dict(t=20, b=20, l=20, r=20),
+            xaxis=dict(title="Semana epidemiológica", gridcolor="#2d3548"),
+            yaxis=dict(title="Casos", gridcolor="#2d3548"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)",
+        )
+        st.plotly_chart(fig6, use_container_width=True)
+
+        semanas_alerta = canal[canal["zona"].isin(["Epidemia", "Alerta"])]
+        col_a, col_b = st.columns(2)
+        with col_a:
+            st.metric("Semanas en zona de Éxito/Seguridad", int((canal["zona"].isin(["Éxito","Seguridad"])).sum()))
+        with col_b:
+            st.metric("Semanas en zona de Alerta/Epidemia", len(semanas_alerta))
+
+        st.markdown("""
+        <div class="warning-box">
+        ⚠️ <b>Esto no es tranquilizador:</b> el canal endémico solo puede evaluar
+        los casos que el sistema efectivamente captura. Si el subregistro aumenta,
+        esta herramienta oficial se vuelve ciega al problema real, dando una falsa
+        sensación de seguridad — 2021 no muestra ninguna alerta precisamente en el
+        año con mayor proporción de hospitalizados (ver pestaña Efecto Iceberg).
+        </div>
+        """, unsafe_allow_html=True)
+
+# --- TAB 6: HALLAZGOS ---
+with tab6:
     st.subheader("Síntesis de hallazgos")
 
     st.markdown(f"""
@@ -274,9 +407,20 @@ with tab4:
     metodología (de domiciliaria a institucional) durante 2018-2021, por la
     pandemia.
     </div>
+    <div class="finding-box">
+    <b>Hallazgo 4 — Correlación climática:</b> todas las variables climáticas
+    analizadas muestran correlación estadísticamente significativa con los
+    casos de dengue, con un patrón inesperado de temperatura (negativo) que
+    amerita más estudio.
+    </div>
+    <div class="finding-box">
+    <b>Hallazgo 5 — Canal endémico:</b> el método oficial del INS no detecta
+    ninguna alerta en 2021, justo el año con mayor evidencia de subregistro —
+    demostrando el límite de esta herramienta cuando el sistema de captura falla.
+    </div>
     """, unsafe_allow_html=True)
 
-    st.subheader("Recomendaciones para la Personería Distrital de Medellín")
+    st.subheader("Recomendaciones")
     st.markdown("""
     <div class="action-box">1. Solicitar a la Secretaría de Salud una explicación formal sobre la evolución del programa de vigilancia entomológica desde la pandemia.</div>
     <div class="action-box">2. Priorizar el seguimiento de comunas con tasas de incidencia históricamente altas y verificar la asignación de recursos de control vectorial.</div>
